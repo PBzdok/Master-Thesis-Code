@@ -26,11 +26,13 @@ reports_data = load_reports_data(10000)
 
 with st.expander('Projections data'):
     st.subheader('Projections data')
-    idx = st.selectbox('Select uid:', projections_data['uid'].drop_duplicates())
-    img_url = projections_data['filename'][idx]
+    uid = st.selectbox('Select uid:', projections_data['uid'])
+    img_url = projections_data['filename'][uid]
     st.write(f'Selected URL: {img_url}')
     left_column, right_column = st.columns(2)
     left_column.write(projections_data)
+    if left_column.checkbox('Show metadata'):
+        left_column.write(reports_data.loc[reports_data['uid'] == uid])
     right_column.image(f'./kaggle_x-ray/images/images_normalized/{img_url}')
 
 with st.expander('Reports data'):
