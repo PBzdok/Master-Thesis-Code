@@ -29,7 +29,8 @@ with st.expander('Overview'):
 
 with st.expander('Model Description'):
     st.subheader('Model Description')
-    st.write('Dolores sunt consequatur laborum. Et rem autem dolores qui assumenda. Sunt illum aut aspernatur maxime quo nostrum illo amet. Reprehenderit ut perspiciatis non alias aut accusantium et. Aspernatur tempore in adipisci pariatur earum et ut.')
+    st.write(
+        'Dolores sunt consequatur laborum. Et rem autem dolores qui assumenda. Sunt illum aut aspernatur maxime quo nostrum illo amet. Reprehenderit ut perspiciatis non alias aut accusantium et. Aspernatur tempore in adipisci pariatur earum et ut.')
 
 with st.expander('Capabilities'):
     st.subheader('Capabilities')
@@ -59,7 +60,7 @@ with st.expander('Browse Data'):
     if left_column.button('Show more'):
         projections_data = load_projections_data(200)
         projections_table.add_rows(projections_data)
-    right_column.image(f'./kaggle_x-ray/images/images_normalized/{img_url}',caption=f'{img_url}')
+    right_column.image(f'./kaggle_x-ray/images/images_normalized/{img_url}', caption=f'{img_url}')
 
 with st.expander('Browse Metadata'):
     st.subheader('Browse Metadata')
