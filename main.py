@@ -1,38 +1,38 @@
-import numpy as np
 import pandas as pd
 import streamlit as st
 
-st.title('Uber pickups in NYC')
-
-DATE_COLUMN = 'date/time'
-DATA_URL = ('https://s3-us-west-2.amazonaws.com/'
-            'streamlit-demo-data/uber-raw-data-sep14.csv.gz')
-
 
 @st.cache
-def load_data(nrows):
-    data = pd.read_csv(DATA_URL, nrows=nrows)
+def load_reports_data(nrows):
+    data = pd.read_csv('./kaggle_x-ray/indiana_reports.csv', nrows=nrows)
     lowercase = lambda x: str(x).lower()
     data.rename(lowercase, axis='columns', inplace=True)
-    data[DATE_COLUMN] = pd.to_datetime(data[DATE_COLUMN])
     return data
 
 
-data_load_state = st.text('Loading data...')
-data = load_data(10000)
-data_load_state.text("Done! (using st.cache)")
+@st.cache
+def load_projections_data(nrows):
+    data = pd.read_csv('./kaggle_x-ray/indiana_projections.csv', nrows=nrows)
+    lowercase = lambda x: str(x).lower()
+    data.rename(lowercase, axis='columns', inplace=True)
+    return data
 
-if st.checkbox('Show raw data'):
-    st.subheader('Raw data')
-    st.write(data)
 
-st.subheader('Number of pickups by hour')
-hist_values = np.histogram(data[DATE_COLUMN].dt.hour, bins=24, range=(0, 24))[0]
-st.bar_chart(hist_values)
+st.set_page_config(layout='wide')
+st.title('AI Assessment System')
 
-# Some number in the range 0-23
-hour_to_filter = st.slider('hour', 0, 23, 17)
-filtered_data = data[data[DATE_COLUMN].dt.hour == hour_to_filter]
+projections_data = load_projections_data(10000)
+reports_data = load_reports_data(10000)
 
-st.subheader('Map of all pickups at %s:00' % hour_to_filter)
-st.map(filtered_data)
+with st.expander('Projections data'):
+    st.subheader('Projections data')
+    idx = st.selectbox('Select uid:', projections_data['uid'].drop_duplicates())
+    img_url = projections_data['filename'][idx]
+    st.write(f'Selected URL: {img_url}')
+    left_column, right_column = st.columns(2)
+    left_column.write(projections_data)
+    right_column.image(f'./kaggle_x-ray/images/images_normalized/{img_url}')
+
+with st.expander('Reports data'):
+    st.subheader('Reports data')
+    st.write(reports_data)
