@@ -1,25 +1,34 @@
 import pandas as pd
 import streamlit as st
-
-
-@st.cache
-def load_reports_data(nrows):
-    data = pd.read_csv('./kaggle_x-ray/indiana_reports.csv', nrows=nrows)
-    lowercase = lambda x: str(x).lower()
-    data.rename(lowercase, axis='columns', inplace=True)
-    return data
-
-
-@st.cache
-def load_projections_data(nrows):
-    data = pd.read_csv('./kaggle_x-ray/indiana_projections.csv', nrows=nrows)
-    lowercase = lambda x: str(x).lower()
-    data.rename(lowercase, axis='columns', inplace=True)
-    return data
-
+import torchvision
+import torchxrayvision as xrv
 
 st.set_page_config(layout='wide')
 st.title('AI Assessment System')
+
+
+@st.cache
+def load_label_csv(nrows):
+    data = pd.read_csv('./data/kaggle-pneumonia-jpg/stage_2_train_labels.csv', nrows=nrows)
+    return data
+
+
+@st.cache
+def load_label_detail_csv(nrows):
+    data = pd.read_csv('./data/kaggle-pneumonia-jpg/stage_2_detailed_class_info.csv', nrows=nrows)
+    return data
+
+
+@st.cache
+def load_dataset():
+    transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
+                                                xrv.datasets.XRayResizer(224)])
+    return xrv.datasets.RSNA_Pneumonia_Dataset(imgpath="./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg",
+                                               transform=transform)
+
+
+model = xrv.models.DenseNet(weights="densenet121-res224-rsna")  # RSNA Pneumonia Challenge
+d_kaggle = load_dataset()
 
 with st.expander('Overview'):
     st.subheader('<Model Name>')
@@ -37,6 +46,7 @@ with st.expander('Capabilities'):
     st.markdown('* Dolores sunt consequatur laborum.')
     st.markdown('* Dolores sunt consequatur laborum.')
     st.markdown('* Dolores sunt consequatur laborum.')
+    st.table(d_kaggle.pathologies)
 
 with st.expander('Standard Metrics'):
     st.subheader('Standard Metrics')
@@ -46,22 +56,18 @@ with st.expander('Standard Metrics'):
     metrics3.metric(label='Mean Squared Error', value='<Value>')
     metrics4.metric(label='Root Mean Squared Error', value='<Value>')
 
-projections_data = load_projections_data(100)
-reports_data = load_reports_data(100)
-
 with st.expander('Browse Data'):
     st.subheader('Browse Data')
-    uid = st.selectbox('Select uid:', projections_data['uid'])
-    img_url = projections_data['filename'][uid]
+    class_data = load_label_detail_csv(100)
+    idx = st.selectbox('Select row:', class_data.index)
+    patient_id = class_data['patientId'][idx]
     left_column, right_column = st.columns(2)
-    projections_table = left_column.dataframe(projections_data)
+    left_column.dataframe(class_data)
     if left_column.checkbox('Show metadata'):
-        st.table(reports_data.loc[reports_data['uid'] == uid])
-    if left_column.button('Show more'):
-        projections_data = load_projections_data(200)
-        projections_table.add_rows(projections_data)
-    right_column.image(f'./kaggle_x-ray/images/images_normalized/{img_url}', caption=f'{img_url}')
+        st.table(d_kaggle.csv.loc[d_kaggle.csv['patientId'] == patient_id][
+                     ['BodyPartExamined', 'PatientAge', 'PatientOrientation', 'PatientSex', 'PixelSpacing',
+                      'SamplesPerPixel', 'ViewPosition']])
+        # st.dataframe(d_kaggle.csv)
 
-with st.expander('Browse Metadata'):
-    st.subheader('Browse Metadata')
-    st.write(reports_data)
+    right_column.image(f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{patient_id}.jpg',
+                       caption=f'{patient_id}.jpg')
