@@ -1,3 +1,5 @@
+import datetime
+
 import pandas as pd
 import streamlit as st
 import torchvision
@@ -8,14 +10,18 @@ st.title('AI Assessment System')
 
 
 @st.cache
-def load_label_csv(nrows):
+def load_label_csv(nrows, sample=False):
     data = pd.read_csv('./data/kaggle-pneumonia-jpg/stage_2_train_labels.csv', nrows=nrows)
+    if sample:
+        data = data.sample(nrows)
     return data
 
 
 @st.cache
-def load_label_detail_csv(nrows):
+def load_label_detail_csv(nrows, sample=False):
     data = pd.read_csv('./data/kaggle-pneumonia-jpg/stage_2_detailed_class_info.csv', nrows=nrows)
+    if sample:
+        data = data.sample(nrows)
     return data
 
 
@@ -24,17 +30,19 @@ def load_dataset():
     transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
                                                 xrv.datasets.XRayResizer(224)])
     return xrv.datasets.RSNA_Pneumonia_Dataset(imgpath="./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg",
-                                               transform=transform)
+                                               transform=transform,
+                                               unique_patients=True)
 
 
-model = xrv.models.DenseNet(weights="densenet121-res224-rsna")  # RSNA Pneumonia Challenge
+model_specifier = 'densenet121-res224-rsna'
+model = xrv.models.DenseNet(weights=model_specifier)  # RSNA Pneumonia Challenge
 d_kaggle = load_dataset()
 
 with st.expander('Overview'):
-    st.subheader('<Model Name>')
+    st.subheader(f'{model_specifier}'.upper())
     overview_l, overview_r = st.columns(2)
-    overview_l.text('<Import Date>')
-    overview_r.text('<Framework>')
+    overview_l.text(f'{datetime.date.today()}')
+    overview_r.text('Pytorch')
 
 with st.expander('Model Description'):
     st.subheader('Model Description')
@@ -43,10 +51,9 @@ with st.expander('Model Description'):
 
 with st.expander('Capabilities'):
     st.subheader('Capabilities')
-    st.markdown('* Dolores sunt consequatur laborum.')
-    st.markdown('* Dolores sunt consequatur laborum.')
-    st.markdown('* Dolores sunt consequatur laborum.')
-    st.table(d_kaggle.pathologies)
+    st.write('The model is able to predict following pathologies from image data:')
+    for p in d_kaggle.pathologies:
+        st.markdown(f'* {p}')
 
 with st.expander('Standard Metrics'):
     st.subheader('Standard Metrics')
@@ -80,6 +87,9 @@ with st.expander('Browse Data'):
                      ['BodyPartExamined', 'PatientAge', 'PatientOrientation', 'PatientSex', 'PixelSpacing',
                       'SamplesPerPixel', 'ViewPosition']])
         # st.dataframe(d_kaggle.csv)
+
+    if left_column.button('Show more images'):
+        label_data = load_label_detail_csv(10, sample=True)
 
     right_column.image(f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{patient_id}.jpg',
                        caption=f'{patient_id}.jpg')
