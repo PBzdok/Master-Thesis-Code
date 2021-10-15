@@ -58,11 +58,23 @@ with st.expander('Standard Metrics'):
 
 with st.expander('Browse Data'):
     st.subheader('Browse Data')
-    class_data = load_label_detail_csv(100)
-    idx = st.selectbox('Select row:', class_data.index)
-    patient_id = class_data['patientId'][idx]
+
+    label_data = load_label_detail_csv(10)
+    labels = label_data['class'].unique()
+    labels_columns = st.columns(len(labels))
+
+    options = []
+    for _, (label, column) in enumerate(zip(labels, labels_columns)):
+        if column.checkbox(label, value=True):
+            options.append(label)
+
+    label_data = label_data[label_data['class'].isin(options)]
+
+    idx = st.selectbox('Select row:', label_data.index)
+    patient_id = label_data['patientId'][idx]
+
     left_column, right_column = st.columns(2)
-    left_column.dataframe(class_data)
+    left_column.dataframe(label_data)
     if left_column.checkbox('Show metadata'):
         st.table(d_kaggle.csv.loc[d_kaggle.csv['patientId'] == patient_id][
                      ['BodyPartExamined', 'PatientAge', 'PatientOrientation', 'PatientSex', 'PixelSpacing',
