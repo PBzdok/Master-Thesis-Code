@@ -87,7 +87,7 @@ with st.expander('Standard Metrics'):
 with st.expander('Browse Data'):
     st.subheader('Browse Data')
 
-    label_data = load_label_detail_csv(50)
+    label_data = load_label_detail_csv(10, sample=True).reset_index()
     labels = label_data['class'].unique()
     labels_columns = st.columns(len(labels))
 
@@ -102,7 +102,7 @@ with st.expander('Browse Data'):
     patient_id = label_data['patientId'][idx]
 
     left_column, right_column = st.columns(2)
-    left_column.dataframe(label_data)
+    left_column.table(label_data['class'])
     if left_column.checkbox('Show metadata'):
         st.table(d_kaggle.csv.loc[d_kaggle.csv['patientId'] == patient_id][
                      ['BodyPartExamined', 'PatientAge', 'PatientOrientation', 'PatientSex', 'PixelSpacing',
@@ -138,4 +138,4 @@ with st.expander('Experiment'):
             experiment_right_column.table(df_result)
 
         if st.button("Reload"):
-            experiment_sample_id = load_label_detail_csv(1000).sample()
+            experiment_sample = load_label_detail_csv(1000).sample().reset_index()
