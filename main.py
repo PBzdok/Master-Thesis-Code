@@ -1,7 +1,9 @@
 import datetime
 
 import pandas as pd
+import skimage
 import streamlit as st
+import torch
 import torchvision
 import torchxrayvision as xrv
 
@@ -32,6 +34,25 @@ def load_dataset():
     return xrv.datasets.RSNA_Pneumonia_Dataset(imgpath="./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg",
                                                transform=transform,
                                                unique_patients=True)
+
+
+def image_preprocessing(img_path):
+    img = skimage.io.imread(img_path)
+    img = xrv.datasets.normalize(img, 255)
+
+    # Check that images are 2D arrays
+    if len(img.shape) > 2:
+        img = img[:, :, 0]
+    if len(img.shape) < 2:
+        print("error, dimension lower than 2 for image")
+
+    # Add color channel
+    img = img[None, :, :]
+
+    transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
+                                                xrv.datasets.XRayResizer(224)])
+
+    return transform(img)
 
 
 model_specifier = 'densenet121-res224-rsna'
@@ -66,7 +87,7 @@ with st.expander('Standard Metrics'):
 with st.expander('Browse Data'):
     st.subheader('Browse Data')
 
-    label_data = load_label_detail_csv(10)
+    label_data = load_label_detail_csv(50)
     labels = label_data['class'].unique()
     labels_columns = st.columns(len(labels))
 
@@ -93,3 +114,28 @@ with st.expander('Browse Data'):
 
     right_column.image(f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{patient_id}.jpg',
                        caption=f'{patient_id}.jpg')
+
+with st.expander('Experiment'):
+    st.subheader('Experiment')
+    experiment_left_column, experiment_right_column = st.columns(2)
+    experiment_sample = load_label_detail_csv(1000).sample().reset_index()
+    experiment_sample_id = experiment_sample['patientId'][0]
+
+    experiment_left_column.image(f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{experiment_sample_id}.jpg',
+                                 caption=f'{experiment_sample_id}.jpg')
+    with torch.no_grad():
+        out = model(torch.from_numpy(
+            image_preprocessing(
+                f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{experiment_sample_id}.jpg'))
+                    .unsqueeze(0)) \
+            .cpu()
+        result = dict(zip(model.pathologies,
+                          out[0].detach().numpy()))
+        result.pop("")
+        df_result = pd.DataFrame(list(result.items()), columns=['Pathology', 'Prediction'])
+
+        if experiment_right_column.button('Show Result'):
+            experiment_right_column.table(df_result)
+
+        if st.button("Reload"):
+            experiment_sample_id = load_label_detail_csv(1000).sample()
