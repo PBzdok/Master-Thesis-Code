@@ -3,4 +3,5 @@ venv
 *.png
 *.jpg
 *.jpeg
+*.csv*
 __pycache__

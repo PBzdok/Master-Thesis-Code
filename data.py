@@ -1,4 +1,3 @@
-import pandas as pd
 import skimage
 import streamlit as st
 import torchvision
@@ -6,24 +5,14 @@ import torchxrayvision as xrv
 
 
 @st.cache
-def load_train_label_csv():
-    data = pd.read_csv('./data/kaggle-pneumonia-jpg/stage_2_train_labels.csv')
-    return data
-
-
-@st.cache
-def load_class_csv():
-    data = pd.read_csv('./data/kaggle-pneumonia-jpg/stage_2_detailed_class_info.csv')
-    return data
-
-
-@st.cache
-def load_dataset():
+def load_nih_dataset():
     transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
                                                 xrv.datasets.XRayResizer(224)])
-    return xrv.datasets.RSNA_Pneumonia_Dataset(imgpath="./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg",
-                                               transform=transform,
-                                               unique_patients=True)
+    d_nih = xrv.datasets.NIH_Dataset(imgpath='./data/NIH/images-224',
+                                     csvpath='./data/NIH/Data_Entry_2017.csv',
+                                     transform=transform)
+    xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, d_nih)
+    return d_nih
 
 
 def image_preprocessing(img_path):
