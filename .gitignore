@@ -4,4 +4,7 @@ venv
 *.jpg
 *.jpeg
 *.csv*
+*.tar
+*.tar.gz
+*.zip
 __pycache__
