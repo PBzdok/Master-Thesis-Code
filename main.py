@@ -3,7 +3,6 @@ import datetime
 import numpy as np
 import streamlit as st
 import torchxrayvision as xrv
-from PIL import Image
 
 from data import load_rsna_dataset, load_detailed_rsna_class_info
 
@@ -11,8 +10,11 @@ st.set_page_config(layout='wide')
 
 model_specifier = 'densenet121-res224-rsna'
 model = xrv.models.DenseNet(weights='densenet121-res224-rsna')
-dataset = load_rsna_dataset()
-# d_nih = load_nih_dataset()
+d_rsna = load_rsna_dataset()
+
+detailed_class_info = load_detailed_rsna_class_info()
+classes = detailed_class_info['class'].unique()
+dataset = d_rsna.csv.merge(detailed_class_info[['patientId', 'class']])
 
 st.title('AI Assessment System')
 
@@ -36,7 +38,7 @@ with st.expander('Model Description'):
 with st.expander('Capabilities'):
     st.subheader('Capabilities')
     st.write('The model is able to predict following pathologies from x-ray images:')
-    for p in dataset.pathologies:
+    for p in d_rsna.pathologies:
         st.markdown(f'* {p}')
 
 # -----------------------------------------------------------------------------------------------------------
@@ -58,15 +60,13 @@ def set_browse_indices(high):
 
 with st.expander('Browse Data'):
     st.subheader('Browse Data')
-    detailed_class_info = load_detailed_rsna_class_info()
-    detailed_classes = load_detailed_rsna_class_info()['class'].unique()
 
     rows = list()
     chunk_size = 3
     options = []
 
-    for i in range(0, len(detailed_classes), chunk_size):
-        rows.append(detailed_classes[i:i + chunk_size])
+    for i in range(0, len(classes), chunk_size):
+        rows.append(classes[i:i + chunk_size])
 
     for row in rows:
         labels_columns = st.columns(len(row))
@@ -75,23 +75,22 @@ with st.expander('Browse Data'):
                 options.append(label)
 
     if 'indices' not in st.session_state:
-        set_browse_indices(len(dataset.csv.index))
+        set_browse_indices(len(dataset.index))
     index_list = st.session_state.indices
 
-    df_samples = dataset.csv.loc[dataset.csv.index[index_list]]
-    df_sample_class = df_samples.merge(detailed_class_info[['patientId', 'class']])
+    df_samples = dataset.loc[d_rsna.csv.index[index_list]]
 
-    idx = st.selectbox('Select row:', df_sample_class.index)
-    patient_id = df_sample_class['patientid'][idx]
+    idx = st.selectbox('Select row:', df_samples.index)
+    patient_id = df_samples['patientid'][idx]
     image_id = patient_id
 
     left_column, right_column = st.columns(2)
-    left_column.table(df_sample_class[df_sample_class['class'].isin(options)]['class'])
+    left_column.table(df_samples[df_samples['class'].isin(options)]['class'])
     if left_column.checkbox('Show metadata'):
-        st.table(dataset.csv.loc[dataset.csv['patientid'] == patient_id][
+        st.table(dataset.loc[dataset['patientid'] == patient_id][
                      ['PatientAge', 'PatientSex', 'ViewPosition', 'BodyPartExamined', 'ConversionType']])
 
-    left_column.button('Show more images', on_click=set_browse_indices, args=(len(dataset.csv.index),))
+    left_column.button('Show more images', on_click=set_browse_indices, args=(len(d_rsna.csv.index),))
 
     image_path = f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{image_id}.jpg'
     right_column.image(image_path, caption=f'{image_id}')
