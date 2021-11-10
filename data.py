@@ -31,6 +31,11 @@ def load_detailed_rsna_class_info():
     return pd.read_csv('./data/kaggle-pneumonia-jpg/stage_2_detailed_class_info.csv')
 
 
+@st.cache
+def load_cluster_metadata():
+    return pd.read_csv('./data/kaggle-pneumonia-jpg/metadata_with_clusters.csv')
+
+
 def image_preprocessing(img_path):
     img = skimage.io.imread(img_path)
     img = xrv.datasets.normalize(img, 255)

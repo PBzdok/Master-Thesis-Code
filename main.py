@@ -4,7 +4,7 @@ import numpy as np
 import streamlit as st
 import torchxrayvision as xrv
 
-from data import load_rsna_dataset, load_detailed_rsna_class_info
+from data import load_rsna_dataset, load_detailed_rsna_class_info, load_cluster_metadata
 
 st.set_page_config(layout='wide')
 
@@ -14,7 +14,11 @@ d_rsna = load_rsna_dataset()
 
 detailed_class_info = load_detailed_rsna_class_info()
 classes = detailed_class_info['class'].unique()
-dataset = d_rsna.csv.merge(detailed_class_info[['patientId', 'class']])
+
+cluster_metadata = load_cluster_metadata()
+
+dataset = d_rsna.csv.merge(detailed_class_info[['patientId', 'class']], on='patientId')
+dataset = dataset.merge(cluster_metadata[['anomaly_score', 'cluster', 'patientId']], on='patientId')
 
 st.title('AI Assessment System')
 
@@ -84,8 +88,11 @@ with st.expander('Browse Data'):
     patient_id = df_samples['patientid'][idx]
     image_id = patient_id
 
+    df_samples = df_samples[df_samples['class'].isin(options)][['class', 'Target']]
+    df_samples = df_samples.rename(columns={'class': 'Details', 'Target': 'Evidence of Pneumonia'})
+
     left_column, right_column = st.columns(2)
-    left_column.table(df_samples[df_samples['class'].isin(options)]['class'])
+    left_column.table(df_samples)
     if left_column.checkbox('Show metadata'):
         st.table(dataset.loc[dataset['patientid'] == patient_id][
                      ['PatientAge', 'PatientSex', 'ViewPosition', 'BodyPartExamined', 'ConversionType']])
