@@ -1,7 +1,9 @@
 import datetime
 
 import numpy as np
+import pandas as pd
 import streamlit as st
+import torch
 import torchxrayvision as xrv
 
 from data import load_rsna_dataset, load_detailed_rsna_class_info, load_cluster_metadata
@@ -64,6 +66,10 @@ def set_browse_indices(high):
 
 with st.expander('Browse Data'):
     st.subheader('Browse Data')
+    n_pathological = sum(dataset['Target'] == 1)
+    n_non_pathological = sum(dataset['Target'] == 0)
+    st.write(
+        f'This dataset contains {n_pathological} pathological images and {n_non_pathological} non pathological images')
 
     rows = list()
     chunk_size = 3
@@ -84,8 +90,8 @@ with st.expander('Browse Data'):
 
     df_samples = dataset.loc[dataset.index[index_list]]
 
-    idx = st.selectbox('Select row:', df_samples.index)
-    patient_id = df_samples['patientid'][idx]
+    selected_idx = st.selectbox('Select row:', df_samples.index)
+    patient_id = df_samples['patientid'][selected_idx]
     image_id = patient_id
 
     df_samples = df_samples[df_samples['class'].isin(options)][['class', 'Target']]
@@ -102,45 +108,40 @@ with st.expander('Browse Data'):
     image_path = f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{image_id}.jpg'
     right_column.image(image_path, caption=f'{image_id}')
 
+
 # -----------------------------------------------------------------------------------------------------------
 
-# def set_experiment_index():
-#     st.session_state['index'] = np.random.randint(low=0, high=len(d_nih.csv.index), size=1)
-#
-#
-# with st.expander('Experiment'):
-#     st.subheader('Experiment')
-#
-#     if 'index' not in st.session_state:
-#         set_experiment_index()
-#     index = st.session_state['index']
-#
-#     experiment_left_column, experiment_right_column = st.columns(2)
-#     experiment_sample = df_details.loc[df_details.index[index]]
-#     experiment_sample_id = experiment_sample['patientId'][index[0]]
-#
-#     experiment_left_column.image(f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{experiment_sample_id}.jpg',
-#                                  caption=f'{experiment_sample_id}.jpg')
-#     with torch.no_grad():
-#         out = model(torch.from_numpy(
-#             image_preprocessing(
-#                 f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{experiment_sample_id}.jpg'))
-#                     .unsqueeze(0)) \
-#             .cpu()
-#         result = dict(zip(model.pathologies,
-#                           out[0].detach().numpy()))
-#         result.pop("")
-#         df_result = pd.DataFrame(list(result.items()), columns=['Pathology', 'Prediction'])
-#
-#         prediction = experiment_right_column.radio('Do you think the image is pathological?', ('Yes', 'No'))
-#         if experiment_right_column.button('Show Result'):
-#             experiment_right_column.table(df_result)
-#
-#     if st.button("Reload"):
-#         set_experiment_index()
-#
-# with st.expander('Test'):
-#     st.subheader('Test')
-#     sample = d_nih[0]
-#     plt.imshow(sample["img"][0], cmap="Greys_r")
-#     dict(zip(d_nih.pathologies, sample["lab"]))
+def set_experiment_index(high):
+    st.session_state.index = np.random.randint(low=0, high=high, size=1)
+
+
+with st.expander('Experiment'):
+    st.subheader('Experiment')
+
+    if 'index' not in st.session_state:
+        set_experiment_index(len(dataset.index))
+    rnd_idx = st.session_state.index
+
+    sample = d_rsna[rnd_idx[0]]
+    sample_id = d_rsna.csv['patientId'][sample['idx']]
+
+    experiment_sample_path = f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{sample_id}.jpg'
+
+    experiment_left_column, experiment_right_column = st.columns(2)
+    experiment_left_column.image(experiment_sample_path, caption=f'{sample_id}.jpg')
+    with torch.no_grad():
+        out = model(torch.from_numpy(sample['img']).unsqueeze(0)).cpu()
+        out = torch.sigmoid(out)
+
+        result = dict(zip(model.pathologies, out[0].detach().numpy()))
+        result.pop("")
+        df_result = pd.DataFrame(list(result.items()), columns=['Pathology', 'Prediction'])
+
+        prediction = experiment_right_column.radio('Do you think the image is pathological?', ('Yes', 'No'))
+        # if experiment_right_column.button('Show Result'):
+        experiment_right_column.table(df_result)
+        if experiment_right_column.checkbox('Show metadata', key='experiment'):
+            experiment_right_column.table(dataset.loc[dataset['patientId'] == sample_id][
+                                              ['PatientAge', 'PatientSex', 'ViewPosition', 'BodyPartExamined']])
+
+    st.button('Reload', on_click=set_experiment_index, args=(len(dataset.index),))
