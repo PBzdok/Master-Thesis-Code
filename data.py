@@ -1,6 +1,9 @@
+import numpy as np
 import pandas as pd
 import skimage
+import sklearn.metrics
 import streamlit as st
+import torch
 import torchvision
 import torchxrayvision as xrv
 
@@ -34,6 +37,30 @@ def load_detailed_rsna_class_info():
 @st.cache
 def load_cluster_metadata():
     return pd.read_csv('./data/kaggle-pneumonia-jpg/metadata_with_clusters.csv')
+
+
+@st.cache
+def calculate_rsna_metrics(model, dataset):
+    y_true = []
+    y_pred = []
+    with torch.no_grad():
+        for i in np.random.randint(0, len(dataset), 1000):
+            sample = dataset[i]
+            y_true.append(sample["lab"][0])
+            out = model(torch.from_numpy(sample["img"]).unsqueeze(0)).cpu()
+            # out = torch.sigmoid(out)
+            out = (out > 0.5).float()
+            out = out.detach().numpy()[0]
+            out = out[8]
+            print(out)
+            y_pred.append(out)
+
+    accuracy = sklearn.metrics.accuracy_score(y_true, y_pred)
+    precision = sklearn.metrics.precision_score(y_true, y_pred)
+    recall = sklearn.metrics.recall_score(y_true, y_pred)
+    f1 = sklearn.metrics.f1_score(y_true, y_pred)
+
+    return accuracy, precision, recall, f1
 
 
 def image_preprocessing(img_path):
