@@ -78,7 +78,7 @@ with st.expander('Browse Data'):
         set_browse_indices(len(dataset.index))
     index_list = st.session_state.indices
 
-    df_samples = dataset.loc[d_rsna.csv.index[index_list]]
+    df_samples = dataset.loc[dataset.index[index_list]]
 
     idx = st.selectbox('Select row:', df_samples.index)
     patient_id = df_samples['patientid'][idx]
@@ -90,7 +90,7 @@ with st.expander('Browse Data'):
         st.table(dataset.loc[dataset['patientid'] == patient_id][
                      ['PatientAge', 'PatientSex', 'ViewPosition', 'BodyPartExamined', 'ConversionType']])
 
-    left_column.button('Show more images', on_click=set_browse_indices, args=(len(d_rsna.csv.index),))
+    left_column.button('Show more images', on_click=set_browse_indices, args=(len(dataset.index),))
 
     image_path = f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{image_id}.jpg'
     right_column.image(image_path, caption=f'{image_id}')
