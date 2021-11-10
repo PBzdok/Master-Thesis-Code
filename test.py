@@ -4,23 +4,20 @@ import torch
 import torchvision
 import torchxrayvision as xrv
 
-transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
-                                            xrv.datasets.XRayResizer(224)])
-d_nih = xrv.datasets.NIH_Dataset(imgpath='./data/NIH/images-224',
-                                 csvpath='./data/NIH/Data_Entry_2017.csv',
-                                 transform=transform)
-xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, d_nih)
+from data import load_rsna_dataset
 
-sample = d_nih[40]
-print(dict(zip(d_nih.pathologies, sample["lab"])))
+d_kag = load_rsna_dataset()
 
-model = xrv.models.DenseNet(weights="all")
+sample = d_kag[1]
+print(dict(zip(d_kag.pathologies, sample["lab"])))
+
+model = xrv.models.DenseNet(weights='densenet121-res224-rsna')
 with torch.no_grad():
     out = model(torch.from_numpy(sample["img"]).unsqueeze(0)).cpu()
 
 dict(zip(model.pathologies, zip(out[0].detach().numpy(), sample["lab"])))
 
-print(d_nih.csv)
+print(d_kag.csv)
 
 # outs = []
 # labs = []

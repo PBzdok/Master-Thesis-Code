@@ -1,18 +1,34 @@
+import pandas as pd
 import skimage
 import streamlit as st
 import torchvision
 import torchxrayvision as xrv
 
+transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
+                                            xrv.datasets.XRayResizer(224)])
+
 
 @st.cache
 def load_nih_dataset():
-    transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
-                                                xrv.datasets.XRayResizer(224)])
     d_nih = xrv.datasets.NIH_Dataset(imgpath='./data/NIH/images-224',
                                      csvpath='./data/NIH/Data_Entry_2017.csv',
                                      transform=transform)
     xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, d_nih)
     return d_nih
+
+
+@st.cache
+def load_rsna_dataset():
+    d_kag = xrv.datasets.RSNA_Pneumonia_Dataset(imgpath='./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg',
+                                                views=["PA", "AP"],
+                                                unique_patients=True,
+                                                transform=transform)
+    return d_kag
+
+
+@st.cache
+def load_detailed_rsna_class_info():
+    return pd.read_csv('./data/kaggle-pneumonia-jpg/stage_2_detailed_class_info.csv')
 
 
 def image_preprocessing(img_path):

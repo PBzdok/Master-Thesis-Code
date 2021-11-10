@@ -5,13 +5,14 @@ import streamlit as st
 import torchxrayvision as xrv
 from PIL import Image
 
-from data import load_nih_dataset
+from data import load_rsna_dataset, load_detailed_rsna_class_info
 
 st.set_page_config(layout='wide')
 
-model_specifier = 'densenet121-res224-all'
-model = xrv.models.DenseNet(weights='all')
-d_nih = load_nih_dataset()
+model_specifier = 'densenet121-res224-rsna'
+model = xrv.models.DenseNet(weights='densenet121-res224-rsna')
+dataset = load_rsna_dataset()
+# d_nih = load_nih_dataset()
 
 st.title('AI Assessment System')
 
@@ -35,7 +36,7 @@ with st.expander('Model Description'):
 with st.expander('Capabilities'):
     st.subheader('Capabilities')
     st.write('The model is able to predict following pathologies from x-ray images:')
-    for p in model.pathologies:
+    for p in dataset.pathologies:
         st.markdown(f'* {p}')
 
 # -----------------------------------------------------------------------------------------------------------
@@ -43,10 +44,10 @@ with st.expander('Capabilities'):
 with st.expander('Standard Metrics'):
     st.subheader('Standard Metrics')
     metrics1, metrics2, metrics3, metrics4 = st.columns(4)
-    metrics1.metric(label='Max Error', value='<Value>')
-    metrics2.metric(label='Mean Error', value='<Value>')
-    metrics3.metric(label='Mean Squared Error', value='<Value>')
-    metrics4.metric(label='Root Mean Squared Error', value='<Value>')
+    metrics1.metric(label='Accuracy', value='<Value>')
+    metrics2.metric(label='Precision', value='<Value>')
+    metrics3.metric(label='Sensitivity', value='<Value>')
+    metrics4.metric(label='F1', value='<Value>')
 
 
 # -----------------------------------------------------------------------------------------------------------
@@ -57,44 +58,43 @@ def set_browse_indices(high):
 
 with st.expander('Browse Data'):
     st.subheader('Browse Data')
-
-    labels = d_nih.pathologies
+    detailed_class_info = load_detailed_rsna_class_info()
+    detailed_classes = load_detailed_rsna_class_info()['class'].unique()
 
     rows = list()
     chunk_size = 3
+    options = []
 
-    for i in range(0, len(labels), chunk_size):
-        rows.append(labels[i:i + chunk_size])
+    for i in range(0, len(detailed_classes), chunk_size):
+        rows.append(detailed_classes[i:i + chunk_size])
 
     for row in rows:
         labels_columns = st.columns(len(row))
-        options = []
         for _, (label, column) in enumerate(zip(row, labels_columns)):
             if column.checkbox(label, value=True, key=label):
                 options.append(label)
 
     if 'indices' not in st.session_state:
-        set_browse_indices(len(d_nih.csv.index))
+        set_browse_indices(len(dataset.csv.index))
     index_list = st.session_state.indices
 
-    df_samples = d_nih.csv.loc[d_nih.csv.index[index_list]]
+    df_samples = dataset.csv.loc[dataset.csv.index[index_list]]
+    df_sample_class = df_samples.merge(detailed_class_info[['patientId', 'class']])
 
-    idx = st.selectbox('Select row:', df_samples.index)
-    patient_id = df_samples['patientid'][idx]
-    image_id = df_samples['Image Index'][idx]
+    idx = st.selectbox('Select row:', df_sample_class.index)
+    patient_id = df_sample_class['patientid'][idx]
+    image_id = patient_id
 
     left_column, right_column = st.columns(2)
-    left_column.table(df_samples['Finding Labels'])
+    left_column.table(df_sample_class[df_sample_class['class'].isin(options)]['class'])
     if left_column.checkbox('Show metadata'):
-        st.table(d_nih.csv.loc[d_nih.csv['patientid'] == patient_id][
-                     ['Follow-up #', 'Patient Age', 'Patient Gender', 'View Position']])
+        st.table(dataset.csv.loc[dataset.csv['patientid'] == patient_id][
+                     ['PatientAge', 'PatientSex', 'ViewPosition', 'BodyPartExamined', 'ConversionType']])
 
-    left_column.button('Show more images', on_click=set_browse_indices, args=(len(d_nih.csv.index),))
+    left_column.button('Show more images', on_click=set_browse_indices, args=(len(dataset.csv.index),))
 
-    image_path = f'./data/NIH/images-224/{image_id}'
-    image = Image.open(image_path)
-    resized_image = image.resize((672, 672), Image.BILINEAR)
-    right_column.image(resized_image, caption=f'{image_id}')
+    image_path = f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{image_id}.jpg'
+    right_column.image(image_path, caption=f'{image_id}')
 
 # -----------------------------------------------------------------------------------------------------------
 
