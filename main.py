@@ -122,18 +122,21 @@ with st.expander('Model Limitations'):
 
     df_limit_samples = df_metrics
 
-    limit_options = ['False Positive', 'False Negative']
-    limit_columns = st.columns(2)
-    for _, (limit_option, column) in enumerate(zip(limit_options, limit_columns)):
-        if column.checkbox(limit_option, value=True, key=limit_option):
-            limit_options.append(limit_option)
+    fp_column, fn_column = st.columns(2)
+    case = st.radio(
+        'Choose Edge Case:',
+        ['False Positive', 'False Negative']
+    )
+    if case == 'False Positive':
+        df_limit_samples = df_limit_samples[(df_limit_samples['y_true'] == 0) & (df_limit_samples['y_pred'] == 1)]
+    else:
+        df_limit_samples = df_limit_samples[(df_limit_samples['y_true'] == 1) & (df_limit_samples['y_pred'] == 0)]
 
     if 'limit_indices' not in st.session_state:
         set_limit_indices(len(df_limit_samples))
     limit_index_list = st.session_state.limit_indices
 
     df_limit_samples = df_limit_samples.loc[df_limit_samples.index[limit_index_list]]
-    st.write(df_limit_samples)
 
     selected_limit_idx = st.selectbox('Select row:', df_limit_samples.index)
     patient_limit_id = df_limit_samples.at[selected_limit_idx, 'patientid']
@@ -149,7 +152,8 @@ with st.expander('Model Limitations'):
         st.table(dataset.loc[dataset['patientid'] == patient_id][
                      ['PatientAge', 'PatientSex', 'ViewPosition', 'BodyPartExamined', 'ConversionType']])
 
-    right_limit_column.button('Show more images', on_click=set_limit_indices, args=(len(df_limit_samples.index),), key='limits')
+    right_limit_column.button('Show more images', on_click=set_limit_indices, args=(len(df_limit_samples.index),),
+                              key='limits')
 
     image_path = f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{image_limit_id}.jpg'
     left_limit_column.image(image_path, caption=f'{image_limit_id}')
@@ -177,15 +181,15 @@ with st.expander('Experiment'):
     experiment_left_column.image(experiment_sample_path, caption=f'{sample_id}.jpg')
     with torch.no_grad():
         out = model(torch.from_numpy(sample['img']).unsqueeze(0)).cpu()
-        out = torch.sigmoid(out)
+        # out = torch.sigmoid(out)
 
         result = dict(zip(model.pathologies, out[0].detach().numpy()))
         result.pop("")
         df_result = pd.DataFrame(list(result.items()), columns=['Pathology', 'Prediction Percentage'])
 
         prediction = experiment_right_column.radio('Do you think the image is pathological?', ('Yes', 'No'))
-        # if experiment_right_column.button('Show Result'):
-        experiment_right_column.table(df_result)
+        if experiment_right_column.button('Show Result'):
+            experiment_right_column.table(df_result)
         if experiment_right_column.checkbox('Show metadata', key='experiment'):
             experiment_right_column.table(dataset.loc[dataset['patientId'] == sample_id][
                                               ['PatientAge', 'PatientSex', 'ViewPosition', 'BodyPartExamined']])
