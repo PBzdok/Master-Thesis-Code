@@ -22,7 +22,7 @@ cluster_metadata = load_cluster_metadata()
 dataset = d_rsna.csv.merge(detailed_class_info[['patientId', 'class']], on='patientId')
 dataset = dataset.merge(cluster_metadata[['anomaly_score', 'cluster', 'patientId']], on='patientId')
 
-metrics = calculate_rsna_metrics(model, d_rsna)
+# metrics = calculate_rsna_metrics(model, d_rsna)
 
 st.title('AI Assessment System')
 
