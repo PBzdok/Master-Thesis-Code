@@ -41,11 +41,13 @@ def load_cluster_metadata():
 
 @st.cache
 def calculate_rsna_metrics(model, dataset):
+    ids = []
     y_true = []
     y_pred = []
     with torch.no_grad():
-        for i in np.random.randint(0, len(dataset), 1000):
+        for i in np.random.randint(0, len(dataset), 100):
             sample = dataset[i]
+            ids.append(dataset.csv['patientId'][sample['idx']])
             y_true.append(sample["lab"][0])
             out = model(torch.from_numpy(sample["img"]).unsqueeze(0)).cpu()
             # out = torch.sigmoid(out)
@@ -60,7 +62,16 @@ def calculate_rsna_metrics(model, dataset):
     recall = sklearn.metrics.recall_score(y_true, y_pred)
     f1 = sklearn.metrics.f1_score(y_true, y_pred)
 
-    return accuracy, precision, recall, f1
+    result = {
+        'ids': ids,
+        'y_true': y_true,
+        'y_pred': y_pred,
+        'accuracy': accuracy,
+        'precision': precision,
+        'recall': recall,
+        'f1': f1
+    }
+    return result
 
 
 def image_preprocessing(img_path):
