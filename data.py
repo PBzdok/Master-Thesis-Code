@@ -22,11 +22,11 @@ def load_nih_dataset():
 
 @st.cache
 def load_rsna_dataset():
-    d_kag = xrv.datasets.RSNA_Pneumonia_Dataset(imgpath='./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg',
-                                                views=["PA", "AP"],
-                                                unique_patients=True,
-                                                transform=transform)
-    return d_kag
+    d_rsna = xrv.datasets.RSNA_Pneumonia_Dataset(imgpath='./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg',
+                                                 views=["PA", "AP"],
+                                                 unique_patients=True,
+                                                 transform=transform)
+    return d_rsna
 
 
 @st.cache
@@ -75,8 +75,5 @@ def image_preprocessing(img_path):
 
     # Add color channel
     img = img[None, :, :]
-
-    transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
-                                                xrv.datasets.XRayResizer(224)])
 
     return transform(img)
