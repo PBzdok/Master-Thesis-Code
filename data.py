@@ -1,3 +1,6 @@
+import json
+import os
+
 import numpy as np
 import pandas as pd
 import skimage
@@ -39,39 +42,47 @@ def load_cluster_metadata():
     return pd.read_csv('./data/kaggle-pneumonia-jpg/metadata_with_clusters.csv')
 
 
-@st.cache
-def calculate_rsna_metrics(model, dataset):
-    ids = []
-    y_true = []
-    y_pred = []
-    with torch.no_grad():
-        for i in np.random.randint(0, len(dataset), 100):
-            sample = dataset[i]
-            ids.append(dataset.csv['patientId'][sample['idx']])
-            y_true.append(sample["lab"][0])
-            out = model(torch.from_numpy(sample["img"]).unsqueeze(0)).cpu()
-            # out = torch.sigmoid(out)
-            out = (out > 0.5).float()
-            out = out.detach().numpy()[0]
-            out = out[8]
-            print(out)
-            y_pred.append(out)
+def calculate_rsna_metrics(model, dataset, force=False):
+    path = './data/kaggle-pneumonia-jpg/metrics.csv'
+    if os.path.isfile(path) and not force:
+        df = pd.read_csv(path)
+    else:
+        ids = []
+        y_true = []
+        y_pred = []
+        with torch.no_grad():
+            for i in np.random.randint(0, len(dataset), 1000):
+                sample = dataset[i]
+                ids.append(dataset.csv['patientId'][sample['idx']])
+                y_true.append(sample["lab"][0])
+                out = model(torch.from_numpy(sample["img"]).unsqueeze(0)).cpu()
+                # out = torch.sigmoid(out)
+                out = (out > 0.5).float()
+                out = out.detach().numpy()[0]
+                out = out[8]
+                print(out)
+                y_pred.append(out)
 
-    accuracy = sklearn.metrics.accuracy_score(y_true, y_pred)
-    precision = sklearn.metrics.precision_score(y_true, y_pred)
-    recall = sklearn.metrics.recall_score(y_true, y_pred)
-    f1 = sklearn.metrics.f1_score(y_true, y_pred)
+        df = pd.DataFrame({
+            'patientid': ids,
+            'y_true': y_true,
+            'y_pred': y_pred,
+        })
+        df.to_csv(path)
+
+    accuracy = sklearn.metrics.accuracy_score(df['y_true'], df['y_pred'])
+    precision = sklearn.metrics.precision_score(df['y_true'], df['y_pred'])
+    recall = sklearn.metrics.recall_score(df['y_true'], df['y_pred'])
+    f1 = sklearn.metrics.f1_score(df['y_true'], df['y_pred'])
 
     result = {
-        'ids': ids,
-        'y_true': y_true,
-        'y_pred': y_pred,
         'accuracy': accuracy,
         'precision': precision,
         'recall': recall,
         'f1': f1
     }
-    return result
+
+    return df, result
 
 
 def image_preprocessing(img_path):
