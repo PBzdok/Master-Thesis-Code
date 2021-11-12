@@ -149,7 +149,7 @@ with st.expander('Model Limitations'):
         df_limit_samples = df_limit_samples.loc[fn_index_list]
 
     selected_limit_idx = st.selectbox('Select row:', df_limit_samples.index)
-    patient_limit_id = df_limit_samples.at[selected_limit_idx, 'patientid']
+    patient_limit_id = df_limit_samples.drop_duplicates()['patientid'][selected_limit_idx]
     image_limit_id = patient_limit_id
 
     df_limit_samples = df_limit_samples[['y_pred', 'y_true']].astype(int)
