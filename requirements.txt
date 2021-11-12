@@ -1,4 +1,5 @@
 altair==4.1.0
+appnope==0.1.2
 argon2-cffi==21.1.0
 astor==0.8.1
 attrs==21.2.0
@@ -8,6 +9,7 @@ base58==2.1.0
 bleach==4.1.0
 blinker==1.4
 cachetools==4.2.4
+captum==0.4.1
 certifi==2021.10.8
 cffi==1.14.6
 charset-normalizer==2.0.7
@@ -94,6 +96,7 @@ typing-extensions==3.10.0.2
 tzlocal==3.0
 urllib3==1.26.7
 validators==0.18.2
+viz==0.0.5
 watchdog==2.1.6
 wcwidth==0.2.5
 webencodings==0.5.1

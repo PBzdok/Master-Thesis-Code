@@ -1,7 +1,6 @@
 import datetime
 
 import numpy as np
-import pandas as pd
 import streamlit as st
 import torch
 import torchxrayvision as xrv
@@ -39,7 +38,11 @@ with st.expander('Overview'):
 with st.expander('Model Description'):
     st.subheader('Model Description')
     st.write(
-        'Dolores sunt consequatur laborum. Et rem autem dolores qui assumenda. Sunt illum aut aspernatur maxime quo nostrum illo amet. Reprehenderit ut perspiciatis non alias aut accusantium et. Aspernatur tempore in adipisci pariatur earum et ut.')
+        'The "DENSENET121-RES224-RSNA" AI model is a variation of a Densely Connected Convolutional Network architecture. '
+        'This architecture has been shown to generate the best predictive performance for X-Ray classification tasks. '
+        'The Model is pre-trained with large amounts of publicly available X-Ray data and was supplied by the Machine Learning and Medicine lab (mlmed.org). '
+        'The model expects an input of 224x224 pixels (grayscale) and outputs the probability of 18 different pathologies, although this version is specialised on pneumonia and predicts only that.'
+    )
 
 # -----------------------------------------------------------------------------------------------------------
 
@@ -90,9 +93,9 @@ with st.expander('Browse Data'):
         set_browse_indices(len(dataset.index))
     index_list = st.session_state.indices
 
-    df_samples = dataset.loc[dataset.index[index_list]]
+    df_samples = dataset.loc[index_list]
 
-    selected_idx = st.selectbox('Select row:', df_samples.index)
+    selected_idx = st.selectbox('Select row:', index_list)
     patient_id = df_samples['patientid'][selected_idx]
     image_id = patient_id
 
@@ -113,30 +116,37 @@ with st.expander('Browse Data'):
 
 # -----------------------------------------------------------------------------------------------------------
 
-def set_limit_indices(high):
-    st.session_state.limit_indices = np.random.randint(low=0, high=high, size=10)
+def set_fp_indices(indices):
+    st.session_state.fp_indices = np.random.choice(indices, 10)
+
+
+def set_fn_indices(indices):
+    st.session_state.fn_indices = np.random.choice(indices, 10)
 
 
 with st.expander('Model Limitations'):
     st.subheader('Model Limitations')
 
     df_limit_samples = df_metrics
+    fp_index_list = []
+    fn_index_list = []
 
-    fp_column, fn_column = st.columns(2)
     case = st.radio(
         'Choose Edge Case:',
         ['False Positive', 'False Negative']
     )
     if case == 'False Positive':
         df_limit_samples = df_limit_samples[(df_limit_samples['y_true'] == 0) & (df_limit_samples['y_pred'] == 1)]
+        if 'fp_indices' not in st.session_state:
+            set_fp_indices(df_limit_samples.index.values)
+        fp_index_list = st.session_state.fp_indices
+        df_limit_samples = df_limit_samples.loc[fp_index_list]
     else:
         df_limit_samples = df_limit_samples[(df_limit_samples['y_true'] == 1) & (df_limit_samples['y_pred'] == 0)]
-
-    if 'limit_indices' not in st.session_state:
-        set_limit_indices(len(df_limit_samples))
-    limit_index_list = st.session_state.limit_indices
-
-    df_limit_samples = df_limit_samples.loc[df_limit_samples.index[limit_index_list]]
+        if 'fn_indices' not in st.session_state:
+            set_fn_indices(df_limit_samples.index.values)
+        fn_index_list = st.session_state.fn_indices
+        df_limit_samples = df_limit_samples.loc[fn_index_list]
 
     selected_limit_idx = st.selectbox('Select row:', df_limit_samples.index)
     patient_limit_id = df_limit_samples.at[selected_limit_idx, 'patientid']
@@ -152,9 +162,6 @@ with st.expander('Model Limitations'):
         st.table(dataset.loc[dataset['patientid'] == patient_id][
                      ['PatientAge', 'PatientSex', 'ViewPosition', 'BodyPartExamined', 'ConversionType']])
 
-    right_limit_column.button('Show more images', on_click=set_limit_indices, args=(len(df_limit_samples.index),),
-                              key='limits')
-
     image_path = f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{image_limit_id}.jpg'
     left_limit_column.image(image_path, caption=f'{image_limit_id}')
 
@@ -163,6 +170,14 @@ with st.expander('Model Limitations'):
 
 def set_experiment_index(high):
     st.session_state.index = np.random.randint(low=0, high=high, size=1)
+
+
+def handle_results(pred, out, col):
+    if (pred == 'Yes' and out == 1.0) or (pred == 'No' and out == 0.0):
+        col.success('You and the AI were the same opinion!')
+        st.balloons()
+    else:
+        col.error('You and the AI have different opinions!')
 
 
 with st.expander('Experiment'):
@@ -181,17 +196,22 @@ with st.expander('Experiment'):
     experiment_left_column.image(experiment_sample_path, caption=f'{sample_id}.jpg')
     with torch.no_grad():
         out = model(torch.from_numpy(sample['img']).unsqueeze(0)).cpu()
-        # out = torch.sigmoid(out)
+        out = torch.sigmoid(out)
+        out = (out > 0.66).float()
+        out = out.detach().numpy()[0]
+        out = out[8]
 
-        result = dict(zip(model.pathologies, out[0].detach().numpy()))
-        result.pop("")
-        df_result = pd.DataFrame(list(result.items()), columns=['Pathology', 'Prediction Percentage'])
+    prediction = experiment_right_column.radio('Do you think the image is pathological?', ('Yes', 'No'))
 
-        prediction = experiment_right_column.radio('Do you think the image is pathological?', ('Yes', 'No'))
-        if experiment_right_column.button('Show Result'):
-            experiment_right_column.table(df_result)
-        if experiment_right_column.checkbox('Show metadata', key='experiment'):
-            experiment_right_column.table(dataset.loc[dataset['patientId'] == sample_id][
-                                              ['PatientAge', 'PatientSex', 'ViewPosition', 'BodyPartExamined']])
+    if experiment_right_column.button('Show Result'):
+        if (prediction == 'Yes' and out == 1.0) or (prediction == 'No' and out == 0.0):
+            experiment_right_column.success('You and the AI have the same opinion!')
+            st.balloons()
+        else:
+            experiment_right_column.error('You and the AI have different opinions!')
 
-    st.button('Reload', on_click=set_experiment_index, args=(len(dataset.index),))
+    experiment_right_column.button('Try Again', on_click=set_experiment_index, args=(len(dataset.index),))
+
+    if experiment_right_column.checkbox('Show metadata', key='experiment'):
+        experiment_right_column.table(dataset.loc[dataset['patientId'] == sample_id][
+                                          ['PatientAge', 'PatientSex', 'ViewPosition', 'BodyPartExamined']])

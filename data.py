@@ -56,8 +56,8 @@ def calculate_rsna_metrics(model, dataset, force=False):
                 ids.append(dataset.csv['patientId'][sample['idx']])
                 y_true.append(sample["lab"][0])
                 out = model(torch.from_numpy(sample["img"]).unsqueeze(0)).cpu()
-                # out = torch.sigmoid(out)
-                out = (out > 0.5).float()
+                out = torch.sigmoid(out)
+                out = (out > 0.66).float()
                 out = out.detach().numpy()[0]
                 out = out[8]
                 print(out)
