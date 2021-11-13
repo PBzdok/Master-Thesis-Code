@@ -21,7 +21,7 @@ cluster_metadata = load_cluster_metadata()
 dataset = d_rsna.csv.merge(detailed_class_info[['patientId', 'class']], on='patientId')
 dataset = dataset.merge(cluster_metadata[['anomaly_score', 'cluster', 'patientId']], on='patientId')
 
-df_metrics, metrics = calculate_rsna_metrics(model, d_rsna)
+df_predictions, metrics = calculate_rsna_metrics(model, d_rsna)
 
 st.title('AI Assessment System')
 
@@ -127,7 +127,7 @@ def set_fn_indices(indices):
 with st.expander('Model Limitations'):
     st.subheader('Model Limitations')
 
-    df_limit_samples = df_metrics
+    df_limit_samples = df_predictions
     fp_index_list = []
     fn_index_list = []
 
@@ -172,45 +172,39 @@ def set_experiment_index(high):
     st.session_state.index = np.random.randint(low=0, high=high, size=1)
 
 
-def handle_results(pred, out, col):
-    if (pred == 'Yes' and out == 1.0) or (pred == 'No' and out == 0.0):
-        col.success('You and the AI were the same opinion!')
-        st.balloons()
-    else:
-        col.error('You and the AI have different opinions!')
-
-
 with st.expander('Experiment'):
     st.subheader('Experiment')
 
     if 'index' not in st.session_state:
-        set_experiment_index(len(dataset.index))
+        set_experiment_index(len(df_predictions.index))
     rnd_idx = st.session_state.index
 
-    sample = d_rsna[rnd_idx[0]]
-    sample_id = d_rsna.csv['patientId'][sample['idx']]
+    sample = df_predictions.iloc[rnd_idx[0]]
+    sample_id = sample['patientid']
+    sample_pred = sample['y_pred']
 
     experiment_sample_path = f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{sample_id}.jpg'
 
     experiment_left_column, experiment_right_column = st.columns(2)
     experiment_left_column.image(experiment_sample_path, caption=f'{sample_id}.jpg')
-    with torch.no_grad():
-        out = model(torch.from_numpy(sample['img']).unsqueeze(0)).cpu()
-        out = torch.sigmoid(out)
-        out = (out > 0.66).float()
-        out = out.detach().numpy()[0]
-        out = out[8]
+
+    # with torch.no_grad():
+    #     out = model(torch.from_numpy(sample['img']).unsqueeze(0)).cpu()
+    #     out = torch.sigmoid(out)
+    #     out = (out > 0.66).float()
+    #     out = out.detach().numpy()[0]
+    #     out = out[8]
 
     prediction = experiment_right_column.radio('Do you think the image is pathological?', ('Yes', 'No'))
 
     if experiment_right_column.button('Show Result'):
-        if (prediction == 'Yes' and out == 1.0) or (prediction == 'No' and out == 0.0):
+        if (prediction == 'Yes' and sample_pred == 1.0) or (prediction == 'No' and sample_pred == 0.0):
             experiment_right_column.success('You and the AI have the same opinion!')
-            st.balloons()
+            # st.balloons()
         else:
             experiment_right_column.error('You and the AI have different opinions!')
 
-    experiment_right_column.button('Try Again', on_click=set_experiment_index, args=(len(dataset.index),))
+    experiment_right_column.button('Try Again', on_click=set_experiment_index, args=(len(df_predictions.index),))
 
     if experiment_right_column.checkbox('Show metadata', key='experiment'):
         experiment_right_column.table(dataset.loc[dataset['patientId'] == sample_id][
