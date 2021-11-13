@@ -43,7 +43,7 @@ def load_cluster_metadata():
 
 
 def calculate_rsna_metrics(model, dataset, force=False):
-    path = './data/kaggle-pneumonia-jpg/metrics.csv'
+    path = './data/kaggle-pneumonia-jpg/predictions.csv'
     if os.path.isfile(path) and not force:
         df = pd.read_csv(path)
     else:
