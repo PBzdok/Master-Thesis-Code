@@ -3,6 +3,7 @@ import datetime
 import numpy as np
 import streamlit as st
 import torchxrayvision as xrv
+from matplotlib import pyplot as plt
 
 from data import load_rsna_dataset, load_detailed_rsna_class_info, load_cluster_metadata, calculate_rsna_metrics
 
@@ -128,9 +129,9 @@ def set_cluster_sample_index(indices):
 with st.expander('Data Clusters'):
     st.subheader('Data Clusters')
 
-    clusters_labels = dataset['cluster'].unique()
-    clusters_labels = np.sort(clusters_labels)
-    n_clusters = len(clusters_labels)
+    cluster_labels = dataset['cluster'].unique()
+    cluster_labels = np.sort(cluster_labels)
+    n_clusters = len(cluster_labels)
 
     clusters = dataset.groupby('cluster')
 
@@ -143,7 +144,7 @@ with st.expander('Data Clusters'):
     cluster_index = st.session_state.cluster_index
     selected_cluster = clusters.get_group(cluster_index)
 
-    for c in clusters_labels:
+    for c in cluster_labels:
         left_cluster_column.button(f'Cluster {c}', key=f'Cluster {c}', on_click=set_cluster_index,
                                    args=(c, clusters.get_group(c),))
 
@@ -168,7 +169,7 @@ with st.expander('Data Clusters'):
     image_path = f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{cluster_sample_id}.jpg'
     right_cluster_column.image(image_path)
     right_cluster_column.table(dataset.loc[dataset['patientid'] == cluster_sample_id][
-                 ['PatientAge', 'PatientSex', 'Target', 'anomaly_score']])
+                                   ['PatientAge', 'PatientSex', 'Target', 'anomaly_score']])
     right_cluster_column.button(f'Show another examples from cluster {cluster_index}',
                                 on_click=set_cluster_sample_index, args=(selected_cluster.index,))
 
