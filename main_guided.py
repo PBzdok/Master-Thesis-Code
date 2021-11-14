@@ -216,7 +216,7 @@ elif selection == intentions[3]:
         left_limit_column, right_limit_column = st.columns(2)
         right_limit_column.table(df_limit_samples)
         if right_limit_column.checkbox('Show metadata', key='limits'):
-            st.table(dataset.loc[dataset['patientid'] == patient_id][
+            st.table(dataset.loc[dataset['patientid'] == patient_limit_id][
                          ['PatientAge', 'PatientSex', 'ViewPosition', 'BodyPartExamined', 'ConversionType']])
 
         image_path = f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{image_limit_id}.jpg'
