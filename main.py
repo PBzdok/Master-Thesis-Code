@@ -175,9 +175,11 @@ with st.expander('Model Limitations'):
 def set_experiment_index(high):
     st.session_state.index = np.random.randint(low=0, high=high, size=1)
 
+
 def show_occlusion(id):
     st.image(f'./data/kaggle-pneumonia-jpg/occlusion/{id}.jpg',
              caption="Bright / Yellow areas show areas of high importance!")
+
 
 with st.expander('Experiment'):
     st.subheader('Experiment')
@@ -195,19 +197,11 @@ with st.expander('Experiment'):
     experiment_left_column, experiment_right_column = st.columns(2)
     experiment_left_column.image(experiment_sample_path, caption=f'{sample_id}.jpg')
 
-    # with torch.no_grad():
-    #     out = model(torch.from_numpy(sample['img']).unsqueeze(0)).cpu()
-    #     out = torch.sigmoid(out)
-    #     out = (out > 0.66).float()
-    #     out = out.detach().numpy()[0]
-    #     out = out[8]
-
     prediction = experiment_right_column.radio('Do you think the image is pathological?', ('Yes', 'No'))
 
     if experiment_right_column.button('Show Result'):
         if (prediction == 'Yes' and sample_pred == 1.0) or (prediction == 'No' and sample_pred == 0.0):
             experiment_right_column.success('You and the AI have the same opinion!')
-            # st.balloons()
         else:
             experiment_right_column.error('You and the AI have different opinions!')
 
@@ -219,4 +213,4 @@ with st.expander('Experiment'):
     if experiment_right_column.checkbox('Show explanation based on which image areas the AI decided',
                                         key='experiment'):
         st.image(f'./data/kaggle-pneumonia-jpg/occlusion/{sample_id}.jpg',
-                                      caption="Bright / Yellow areas show areas of high importance!")
+                 caption="Bright / Yellow areas show areas of high importance!")
