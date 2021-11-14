@@ -94,12 +94,13 @@ with st.expander('Browse Data'):
     index_list = st.session_state.indices
 
     df_samples = dataset.loc[index_list]
+    df_samples = df_samples[df_samples['class'].isin(options)]
 
-    selected_idx = st.selectbox('Select row:', index_list)
+    selected_idx = st.selectbox('Select row:', df_samples.index.values)
     patient_id = df_samples['patientid'][selected_idx]
     image_id = patient_id
 
-    df_samples = df_samples[df_samples['class'].isin(options)][['class', 'Target']]
+    df_samples = df_samples[['class', 'Target']]
     df_samples = df_samples.rename(columns={'class': 'Details', 'Target': 'Evidence of Pneumonia'})
 
     left_column, right_column = st.columns(2)
