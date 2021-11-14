@@ -2,7 +2,6 @@ import datetime
 
 import numpy as np
 import streamlit as st
-import torch
 import torchxrayvision as xrv
 
 from data import load_rsna_dataset, load_detailed_rsna_class_info, load_cluster_metadata, calculate_rsna_metrics
@@ -166,12 +165,19 @@ with st.expander('Model Limitations'):
     image_path = f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{image_limit_id}.jpg'
     left_limit_column.image(image_path, caption=f'{image_limit_id}')
 
+    if left_limit_column.checkbox('Show explanation based on which image areas the AI decided'):
+        st.image(f'./data/kaggle-pneumonia-jpg/occlusion/{image_limit_id}.jpg',
+                 caption="Bright / Yellow areas show areas of high importance!")
+
 
 # -----------------------------------------------------------------------------------------------------------
 
 def set_experiment_index(high):
     st.session_state.index = np.random.randint(low=0, high=high, size=1)
 
+def show_occlusion(id):
+    st.image(f'./data/kaggle-pneumonia-jpg/occlusion/{id}.jpg',
+             caption="Bright / Yellow areas show areas of high importance!")
 
 with st.expander('Experiment'):
     st.subheader('Experiment')
@@ -210,3 +216,7 @@ with st.expander('Experiment'):
     if experiment_right_column.checkbox('Show metadata', key='experiment'):
         experiment_right_column.table(dataset.loc[dataset['patientId'] == sample_id][
                                           ['PatientAge', 'PatientSex', 'ViewPosition', 'BodyPartExamined']])
+    if experiment_right_column.checkbox('Show explanation based on which image areas the AI decided',
+                                        key='experiment'):
+        st.image(f'./data/kaggle-pneumonia-jpg/occlusion/{sample_id}.jpg',
+                                      caption="Bright / Yellow areas show areas of high importance!")
