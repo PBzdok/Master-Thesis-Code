@@ -42,6 +42,40 @@ def load_cluster_metadata():
     return pd.read_csv('./data/kaggle-pneumonia-jpg/metadata_with_clusters.csv')
 
 
+@st.cache
+def calculate_cluster_metrics(clusters):
+    anomaly_score = np.empty([6, 1])
+    mean_age = np.empty([6, 1])
+    max_age = np.empty([6, 1])
+    min_age = np.empty([6, 1])
+    n_men = np.empty([6, 1])
+    n_women = np.empty([6, 1])
+    n_pathological_cluster = np.empty([6, 1])
+    n_non_pathological_cluster = np.empty([6, 1])
+
+    for i, c in clusters:
+        anomaly_score[i] = c['anomaly_score'].mean()
+        mean_age[i] = c['PatientAge'].mean()
+        max_age[i] = c['PatientAge'].max()
+        min_age[i] = c['PatientAge'].min()
+        n_men[i] = sum(c['PatientSex'] == 'M')
+        n_women[i] = sum(c['PatientSex'] == 'F')
+        n_pathological_cluster[i] = sum(c['Target'] == 1)
+        n_non_pathological_cluster[i] = sum(c['Target'] == 0)
+
+    return {
+        'anomaly': anomaly_score,
+        'mean_age': mean_age,
+        'max_age': max_age,
+        'min_age': min_age,
+        'n_men': n_men,
+        'n_women': n_women,
+        'n_path': n_pathological_cluster,
+        'n_non_path': n_non_pathological_cluster
+    }
+
+
+
 def calculate_rsna_metrics(model, dataset, force=False):
     path = './data/kaggle-pneumonia-jpg/predictions.csv'
     if os.path.isfile(path) and not force:
