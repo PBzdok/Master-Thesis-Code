@@ -116,6 +116,65 @@ with st.expander('Browse Data'):
 
 # -----------------------------------------------------------------------------------------------------------
 
+def set_cluster_index(index, cluster):
+    st.session_state.cluster_index = index
+    set_cluster_sample_index(cluster.index)
+
+
+def set_cluster_sample_index(indices):
+    st.session_state.cluster_sample_index = np.random.choice(indices, 1)
+
+
+with st.expander('Data Clusters'):
+    st.subheader('Data Clusters')
+
+    clusters_labels = dataset['cluster'].unique()
+    clusters_labels = np.sort(clusters_labels)
+    n_clusters = len(clusters_labels)
+
+    clusters = dataset.groupby('cluster')
+
+    st.write(f'A dataset analysis has shown that {n_clusters} main clusters of data can be aggregated by metadata.')
+
+    left_cluster_column, mid_cluster_column, right_cluster_column = st.columns([0.5, 2, 3])
+
+    if 'cluster_index' not in st.session_state:
+        set_cluster_index(0, clusters.get_group(0))
+    cluster_index = st.session_state.cluster_index
+    selected_cluster = clusters.get_group(cluster_index)
+
+    for c in clusters_labels:
+        left_cluster_column.button(f'Cluster {c}', key=f'Cluster {c}', on_click=set_cluster_index,
+                                   args=(c, clusters.get_group(c),))
+
+    mean_anomaly_score = selected_cluster['anomaly_score'].mean()
+    mean_age = selected_cluster['PatientAge'].mean()
+    max_age = selected_cluster['PatientAge'].max()
+    min_age = selected_cluster['PatientAge'].min()
+    n_men = sum(selected_cluster['PatientSex'] == 'M')
+    n_women = sum(selected_cluster['PatientSex'] == 'F')
+    n_pathological_cluster = sum(selected_cluster['Target'] == 1)
+    n_non_pathological_cluster = sum(selected_cluster['Target'] == 0)
+
+    mid_cluster_column.markdown(
+        f'* Cluster {cluster_index} has {len(selected_cluster.index)} entries and a mean anomaly score of {mean_anomaly_score.round(2)}.\n'
+        f'* The mean age of this cluster is {mean_age.round(2)}, while the maximum and minimum age are {max_age} and {min_age} respectively.\n'
+        f'* This cluster contains {n_men} male instances and {n_women} female instances.\n'
+        f'* This cluster contains {n_pathological_cluster} pathological instances and {n_non_pathological_cluster} non pathological instances.\n'
+    )
+
+    cluster_sample_index = st.session_state.cluster_sample_index
+    cluster_sample_id = selected_cluster['patientid'][cluster_sample_index].values[0]
+    image_path = f'./data/kaggle-pneumonia-jpg/stage_2_train_images_jpg/{cluster_sample_id}.jpg'
+    right_cluster_column.image(image_path)
+    right_cluster_column.table(dataset.loc[dataset['patientid'] == cluster_sample_id][
+                 ['PatientAge', 'PatientSex', 'Target', 'anomaly_score']])
+    right_cluster_column.button(f'Show another examples from cluster {cluster_index}',
+                                on_click=set_cluster_sample_index, args=(selected_cluster.index,))
+
+
+# -----------------------------------------------------------------------------------------------------------
+
 def set_fp_indices(indices):
     st.session_state.fp_indices = np.random.choice(indices, 10)
 
