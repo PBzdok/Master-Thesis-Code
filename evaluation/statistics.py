@@ -1,4 +1,6 @@
+import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 
 df = pd.read_csv('./evaluation/results.csv')
 
@@ -30,37 +32,39 @@ nasa_tlx_cols = ['nasa-tlx_1', 'nasa-tlx_2', 'nasa-tlx_3', 'nasa-tlx_4', 'nasa-t
 nasa_tlx_scores = df[nasa_tlx_cols].sum(axis=1) / len(nasa_tlx_cols)
 df['nasa_tlx_score'] = nasa_tlx_scores
 
+df = df[['age',
+         'semester',
+         'guidance',
+         'ati_score',
+         'sipa_pre_score',
+         'fost_pre_score',
+         'sipa_post_score',
+         'fost_post_score',
+         'ess_score',
+         'nasa_tlx_score']]
 print('All participants:')
-print(df[['age',
-          'semester',
-          'ati_score',
-          'sipa_pre_score',
-          'fost_pre_score',
-          'sipa_post_score',
-          'fost_post_score',
-          'ess_score',
-          'nasa_tlx_score']].describe().to_string())
+print(df.describe().to_string())
 
 g_df = df[df['guidance'] == True]
 print('Guided participants:')
-print(g_df[['age',
-            'semester',
-            'ati_score',
-            'sipa_pre_score',
-            'fost_pre_score',
-            'sipa_post_score',
-            'fost_post_score',
-            'ess_score',
-            'nasa_tlx_score']].describe().to_string())
+print(g_df.describe().to_string())
 
 u_df = df[df['guidance'] == False]
 print('Unguided participants:')
-print(u_df[['age',
-            'semester',
-            'ati_score',
-            'sipa_pre_score',
-            'fost_pre_score',
-            'sipa_post_score',
-            'fost_post_score',
-            'ess_score',
-            'nasa_tlx_score']].describe().to_string())
+print(u_df.describe().to_string())
+
+ati_df = pd.concat([df['ati_score'], g_df['ati_score'], u_df['ati_score']], axis=1, keys=['all', 'guided', 'unguided'])
+sipa_pre_df = pd.concat([df['sipa_pre_score'], g_df['sipa_pre_score'], u_df['sipa_pre_score']], axis=1,
+                        keys=['all', 'guided', 'unguided'])
+fost_pre_df = pd.concat([df['fost_pre_score'], g_df['fost_pre_score'], u_df['fost_pre_score']], axis=1,
+                        keys=['all', 'guided', 'unguided'])
+sipa_post_df = pd.concat([df['sipa_post_score'], g_df['sipa_post_score'], u_df['sipa_post_score']], axis=1,
+                         keys=['all', 'guided', 'unguided'])
+fost_post_df = pd.concat([df['fost_post_score'], g_df['fost_post_score'], u_df['fost_post_score']], axis=1,
+                         keys=['all', 'guided', 'unguided'])
+ess_df = pd.concat([df['ess_score'], g_df['ess_score'], u_df['ess_score']], axis=1, keys=['all', 'guided', 'unguided'])
+nasa_tlx_df = pd.concat([df['nasa_tlx_score'], g_df['nasa_tlx_score'], u_df['nasa_tlx_score']], axis=1,
+                        keys=['all', 'guided', 'unguided'])
+sns.set_theme(style="whitegrid")
+sns.boxplot(data=sipa_post_df)
+plt.show()
