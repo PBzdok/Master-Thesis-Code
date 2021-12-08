@@ -66,7 +66,7 @@ ess_df = pd.concat([df['ess_score'], g_df['ess_score'], u_df['ess_score']], axis
 nasa_tlx_df = pd.concat([df['nasa_tlx_score'], g_df['nasa_tlx_score'], u_df['nasa_tlx_score']], axis=1,
                         keys=['all', 'guided', 'unguided'])
 
-sns.set(style="whitegrid", rc={"figure.figsize": (10, 20)})
+sns.set(style='whitegrid', rc={'figure.figsize': (10, 20)})
 fig, axes = plt.subplots(5, 2, sharex=True, sharey='row')
 
 axes[0, 0].set_title('SIPA Pre')
@@ -81,14 +81,14 @@ sns.boxplot(ax=axes[1, 0], data=fost_pre_df)
 axes[1, 1].set_title('FOST Post')
 sns.boxplot(ax=axes[1, 1], data=fost_post_df)
 
-axes[2, 1].set_title('ESS')
+axes[2, 1].set_title('ESS Post')
 sns.boxplot(ax=axes[2, 1], data=ess_df)
 
-axes[3, 1].set_title('NASA-TLX')
+axes[3, 1].set_title('NASA-TLX Post')
 sns.boxplot(ax=axes[3, 1], data=nasa_tlx_df)
 
-axes[4, 0].set_title('ATI')
+axes[4, 0].set_title('ATI Pre')
 sns.boxplot(ax=axes[4, 0], data=ati_df)
 
 # sns.boxplot(data=sipa_post_df)
-plt.show()
+plt.savefig('./evaluation/boxplots.png')
