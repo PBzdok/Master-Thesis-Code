@@ -1,4 +1,3 @@
-import json
 import os
 
 import numpy as np
@@ -73,7 +72,6 @@ def calculate_cluster_metrics(clusters):
         'n_path': n_pathological_cluster,
         'n_non_path': n_non_pathological_cluster
     }
-
 
 
 def calculate_rsna_metrics(model, dataset, force=False):
