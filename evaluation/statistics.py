@@ -31,6 +31,10 @@ df['ess_score'] = ess_scores
 nasa_tlx_cols = ['nasa-tlx_1', 'nasa-tlx_2', 'nasa-tlx_3', 'nasa-tlx_4', 'nasa-tlx_5']
 nasa_tlx_scores = df[nasa_tlx_cols].sum(axis=1) / len(nasa_tlx_cols)
 df['nasa_tlx_score'] = nasa_tlx_scores
+
+sipa_diff_scores = df['sipa_pre_score'] - df['sipa_post_score']
+df['sipa_diff_score'] = sipa_diff_scores
+
 df.to_csv('./evaluation/results_with_means.csv')
 
 df_small = df[['age',
