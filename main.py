@@ -3,14 +3,13 @@ import datetime
 import numpy as np
 import streamlit as st
 import torchxrayvision as xrv
-from matplotlib import pyplot as plt
 
 from data import load_rsna_dataset, load_detailed_rsna_class_info, load_cluster_metadata, calculate_rsna_metrics
 
 st.set_page_config(layout='wide')
 
 model_specifier = 'densenet121-res224-rsna'
-model = xrv.models.DenseNet(weights='densenet121-res224-rsna')
+model = xrv.models.DenseNet(weights=model_specifier)
 d_rsna = load_rsna_dataset()
 
 detailed_class_info = load_detailed_rsna_class_info()

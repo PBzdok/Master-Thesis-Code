@@ -24,13 +24,13 @@ df_predictions, metrics = calculate_rsna_metrics(model, d_rsna)
 
 st.title('AI Assessment System')
 
-intentions = ["Allgemeine Informationen zur KI",
-              "Standard-Metriken und Performanz der KI",
-              "Trainingsdaten der KI",
-              "Schwächen und Randfälle der KI",
-              "Vergleich zwischen der KI und sich selbst"]
+intentions = ["General information about AI",
+              "Standard metrics and performance of AI",
+              "AI training data",
+              "Weaknesses and edge cases of AI",
+              "Comparison between the AI and yourself"]
 
-selection = st.radio("Mit welchem Thema möchten Sie sich befassen?", intentions)
+selection = st.radio("What topic would you like to explore?", intentions)
 
 if selection == intentions[0]:
     with st.expander('Overview'):
